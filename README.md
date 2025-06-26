@@ -54,7 +54,7 @@ Flask backend will be available at:
 
 ### 3. Setup Frontend (served separately)
 
-In another terminal, navigate to the folder where your frontend (HTML/JS/Tailwind) is located(remain in the same folder if app.py and frontend files in same folder):
+In another terminal, navigate to the folder where your frontend is located(remain in the same folder if app.py and frontend files in same folder):
 
 ```bash
 cd frontend/
