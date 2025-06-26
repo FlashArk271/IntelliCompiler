@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Complexity Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/cobalt.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/solarized.min.css">
+    
+    <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-glow: #00d4ff;
+            --secondary-glow: #ff0080;
+            --accent-glow: #00ff88;
+            --warning-glow: #ffaa00;
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+            --text-primary: #ffffff;
+            --text-secondary: #b8c5d6;
+            --border-primary: #2a2a3e;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0f 50%, #000000 100%);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Animated grid background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: grid-move 20s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes grid-move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: float-orb 15s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.3), transparent);
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 0, 128, 0.3), transparent);
+            top: 60%;
+            right: 10%;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.3), transparent);
+            bottom: 20%;
+            left: 50%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float-orb {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.1); }
+            50% { transform: translate(-20px, 20px) scale(0.9); }
+            75% { transform: translate(20px, 10px) scale(1.05); }
+        }
+
+        /* Holographic title */
+        .holo-title {
+            font-family: 'Orbitron', monospace;
+            font-weight: 800;
+            font-size: 3.5rem;
+            background: linear-gradient(45deg, 
+                #00d4ff 0%, 
+                #ff0080 25%, 
+                #00ff88 50%, 
+                #ffaa00 75%, 
+                #00d4ff 100%);
+            background-size: 400% 400%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: holo-shift 3s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+            position: relative;
+        }
+
+        @keyframes holo-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .holo-title::before {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            background-clip: text;
+            -webkit-background-clip: text;
+            animation: scan-line 2s linear infinite;
+        }
+
+        @keyframes scan-line {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Glass morphism containers */
+        .glass-panel {
+            background: rgba(26, 26, 46, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: glass-shine 3s infinite;
+        }
+
+        @keyframes glass-shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* Cyber buttons */
+        .cyber-btn {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1));
+            border: 2px solid var(--primary-glow);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cyber-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .cyber-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 10px 30px rgba(0, 212, 255, 0.3),
+                0 0 20px rgba(0, 212, 255, 0.5);
+            border-color: rgba(0, 212, 255, 0.8);
+        }
+
+        .cyber-btn:hover::before {
+            left: 100%;
+        }
+
+        .cyber-btn:active {
+            transform: translateY(0);
+        }
+
+        .cyber-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Epic complexity buttons */
+        .complexity-btn {
+            background: linear-gradient(135deg, rgba(255, 0, 128, 0.2), rgba(255, 0, 128, 0.1));
+            border: 2px solid var(--secondary-glow);
+            color: var(--text-primary);
+            padding: 16px 32px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 180px;
+            justify-content: center;
+            clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%, 20px 50%);
+        }
+
+        .complexity-btn.time {
+            background: linear-gradient(135deg, rgba(255, 0, 128, 0.3), rgba(255, 64, 129, 0.2));
+            border-color: var(--secondary-glow);
+            box-shadow: 0 0 20px rgba(255, 0, 128, 0.3);
+        }
+
+        .complexity-btn.time:hover {
+            background: linear-gradient(135deg, rgba(255, 0, 128, 0.5), rgba(255, 64, 129, 0.3));
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 15px 40px rgba(255, 0, 128, 0.4),
+                0 0 30px rgba(255, 0, 128, 0.6);
+        }
+
+        .complexity-btn.space {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.3), rgba(34, 211, 238, 0.2));
+            border-color: var(--accent-glow);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .complexity-btn.space:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.5), rgba(34, 211, 238, 0.3));
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 15px 40px rgba(0, 255, 136, 0.4),
+                0 0 30px rgba(0, 255, 136, 0.6);
+        }
+
+        .complexity-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .complexity-btn .icon {
+            font-size: 20px;
+            filter: drop-shadow(0 0 10px currentColor);
+            animation: icon-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Holographic terminal */
+        .holo-terminal {
+            background: rgba(10, 10, 15, 0.8);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 0 30px rgba(0, 212, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .holo-terminal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary-glow), transparent);
+            animation: terminal-scan 2s linear infinite;
+        }
+
+        @keyframes terminal-scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .terminal-header {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(26, 26, 46, 0.8));
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            font-family: 'Orbitron', monospace;
+            font-weight: 600;
+            color: var(--primary-glow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+        }
+
+        .terminal-header::before {
+            content: '◉ ◉ ◉';
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(0, 212, 255, 0.6);
+            font-size: 12px;
+        }
+
+        .terminal-content {
+            padding: 20px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(10, 10, 15, 0.6);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(26, 26, 46, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary-glow), var(--secondary-glow));
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--secondary-glow), var(--primary-glow));
+        }
+
+        /* Holographic loading */
+        .holo-loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-glow);
+            animation: holo-spin 1s linear infinite;
+            filter: drop-shadow(0 0 10px var(--primary-glow));
+        }
+
+        @keyframes holo-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Input fields */
+        .holo-input {
+            background: rgba(10, 10, 15, 0.8);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            color: var(--text-primary);
+            padding: 14px 18px;
+            font-family: 'JetBrains Mono', monospace;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .holo-input:focus {
+            outline: none;
+            border-color: var(--primary-glow);
+            box-shadow: 
+                0 0 20px rgba(0, 212, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .holo-input::placeholder {
+            color: rgba(184, 197, 214, 0.5);
+        }
+
+        /* Select styling */
+        .holo-select {
+            background: rgba(10, 10, 15, 0.8);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            font-family: 'Rajdhani', sans-serif;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .holo-select:focus {
+            outline: none;
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Language badge */
+        .lang-badge {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(255, 0, 128, 0.3));
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            animation: badge-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes badge-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 212, 255, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(255, 0, 128, 0.4); }
+        }
+
+        /* Status indicators */
+        .status-orb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+            position: relative;
+            animation: status-pulse 2s infinite;
+        }
+
+        .status-orb::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+            opacity: 0.3;
+            animation: status-ring 2s infinite;
+        }
+
+        .status-orb.ready { 
+            background: var(--accent-glow);
+            color: var(--accent-glow);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+        .status-orb.running { 
+            background: var(--warning-glow);
+            color: var(--warning-glow);
+            box-shadow: 0 0 15px var(--warning-glow);
+        }
+        .status-orb.waiting { 
+            background: var(--secondary-glow);
+            color: var(--secondary-glow);
+            box-shadow: 0 0 15px var(--secondary-glow);
+        }
+        .status-orb.error { 
+            background: #ff4444;
+            color: #ff4444;
+            box-shadow: 0 0 15px #ff4444;
+        }
+
+        @keyframes status-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes status-ring {
+            0% { transform: scale(1); opacity: 0.3; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Messages */
+        .holo-message {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin: 12px 0;
+            font-weight: 600;
+            animation: message-slide 0.4s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .holo-message::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: message-shine 2s infinite;
+        }
+
+        .success-message {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: var(--accent-glow);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+        }
+
+        .error-message {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: #ff4444;
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.2);
+        }
+
+        @keyframes message-slide {
+            from { transform: translateX(-30px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes message-shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* Input section */
+        .input-section {
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(26, 26, 46, 0.6);
+            border-radius: 16px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .input-section.active {
+            max-height: 150px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+
+        /* Complexity results */
+        .complexity-card {
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(22, 33, 62, 0.6));
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 12px 0;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .complexity-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+            animation: card-scan 4s infinite;
+        }
+
+        @keyframes card-scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* CodeMirror enhancements */
+        .CodeMirror {
+            height: 400px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            border-radius: 16px;
+            background: rgba(10, 10, 15, 0.9);
+            border: 2px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .CodeMirror-focused {
+            border-color: rgba(0, 212, 255, 0.5);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .CodeMirror-focused .CodeMirror-cursor {
+            border-left: 2px solid var(--primary-glow);
+            animation: cursor-blink 1s infinite;
+        }
+
+        @keyframes cursor-blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .CodeMirror-gutters {
+            background: rgba(26, 26, 46, 0.8);
+            border-right: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        /* Fix solarized theme */
+        .cm-s-solarized.CodeMirror {
+            background: #002b36 !important;
+            color: #839496 !important;
+        }
+
+        .cm-s-solarized .CodeMirror-gutters {
+            background: #073642 !important;
+            border-right: 1px solid #586e75 !important;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .holo-title {
+                font-size: 2.5rem;
+            }
+            
+            .cyber-btn, .complexity-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            
+            .complexity-btn {
+                min-width: 150px;
+                clip-path: none;
+                border-radius: 12px;
+            }
+
+            .glass-panel {
+                border-radius: 16px;
+                padding: 16px;
+            }
+        }
+
+        /* Hide elements */
+        .hidden { display: none !important; }
+
+        /* Main layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        /* Control panel */
+        .control-panel {
+            background: rgba(26, 26, 46, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(15px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated grid background -->
+    <div class="grid-bg"></div>
+    
+    <!-- Floating orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="relative z-10 min-h-screen py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="holo-title mb-6" data-text="AI CODE ANALYZER">AI CODE ANALYZER</h1>
+            <p class="text-xl text-gray-300 font-light tracking-wide">Advanced complexity analysis with AI-powered insights</p>
+        </header>
+
+        <!-- Main container -->
+        <div class="main-grid">
+            <!-- Left Panel - Code Editor -->
+            <div class="glass-panel p-6">
+                <!-- Control Panel -->
+                <div class="control-panel">
+                    <div class="flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-4 items-center">
+                            <select id="themeSelect" class="holo-select">
+                                <option value="default">Default</option>
+                                <option value="dracula">Dracula</option>
+                                <option value="monokai">Monokai</option>
+                                <option value="material-darker">Material Darker</option>
+                                <option value="cobalt">Cobalt</option>
+                                <option value="solarized">Solarized Dark</option>
+                            </select>
+                            
+                            <select id="languageSelect" class="holo-select">
+                                <option value="">Auto Detect</option>
+                                <option value="C">C</option>
+                                <option value="C++">C++</option>
+                                <option value="Python">Python</option>
+                                <option value="Java">Java</option>
+                            </select>
+                            
+                            <span id="currentLanguageBadge" class="lang-badge">Auto Detect</span>
+                        </div>
+                        
+                        <div class="flex gap-4">
+                            <button id="timeComplexityBtn" class="complexity-btn time">
+                                <span class="icon">⚡</span>
+                                <span>TIME</span>
+                            </button>
+                            <button id="spaceComplexityBtn" class="complexity-btn space">
+                                <span class="icon">🚀</span>
+                                <span>SPACE</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Editor -->
+                <div class="mb-6">
+                    <textarea id="codeEditor" placeholder="// Enter your code here..."></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-4 mb-4">
+                    <button id="runBtn" class="cyber-btn flex-1">
+                        <span>▶ Execute Code</span>
+                    </button>
+                    <button id="stopBtn" class="cyber-btn" style="display: none;">
+                        <span>⏹ Stop</span>
+                    </button>
+                    <button id="detectBtn" class="cyber-btn">
+                        <span>🔍 Detect</span>
+                    </button>
+                    <button id="clearBtn" class="cyber-btn">
+                        <span>🗑 Clear</span>
+                    </button>
+                </div>
+
+                <!-- Input Section -->
+                <div id="inputSection" class="input-section">
+                    <label class="block text-sm font-semibold mb-4 text-cyan-300 uppercase tracking-wider">Program Input Required:</label>
+                    <div class="flex gap-4">
+                        <input type="text" id="inputField" class="holo-input flex-1" placeholder="Enter input value...">
+                        <button id="sendBtn" class="cyber-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Output & Analysis -->
+            <div class="glass-panel p-6">
+                <!-- Complexity Analysis Results -->
+                <div id="complexityResults" class="hidden mb-6">
+                    <div class="holo-terminal">
+                        <div class="terminal-header">🧠 AI Complexity Analysis</div>
+                        <div class="terminal-content" id="complexityContent">
+                            <div class="text-center text-gray-400">
+                                Run complexity analysis to see results...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Code Output -->
+                <div class="holo-terminal mb-6">
+                    <div class="terminal-header">📟 Program Output</div>
+                    <div class="terminal-content">
+                        <pre id="outputDisplay" class="text-sm whitespace-pre-wrap text-gray-200"></pre>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div id="messageContainer" class="mb-6"></div>
+
+                <!-- Status Panel -->
+                <div class="glass-panel p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Status:</span>
+                        <span class="flex items-center">
+                            <span id="statusDot" class="status-orb ready"></span>
+                            <span id="statusText" class="text-cyan-300 font-bold">Ready</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Language:</span>
+                        <span id="languageDetected" class="text-purple-400 font-bold">Detected: None</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class DynamicCodeEditor {
+            constructor() {
+                this.API_BASE = 'http://localhost:5000';
+                this.currentExecutionId = null;
+                this.isRunning = false;
+                this.lastDetectionTime = 0;
+                this.detectionThrottle = 2000;
+                this.initializeEditor();
+                this.setupEventListeners();
+            }
+
+            initializeEditor() {
+                this.editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+                    lineNumbers: true,
+                    mode: 'text/x-csrc',
+                    theme: 'default',
+                    autoCloseBrackets: true,
+                    matchBrackets: true,
+                    indentUnit: 4,
+                    lineWrapping: true,
+                    viewportMargin: Infinity
+                });
+            }
+
+            setupEventListeners() {
+                // Theme selector
+                document.getElementById('themeSelect').addEventListener('change', (e) => {
+                    this.editor.setOption('theme', e.target.value);
+                });
+
+                // Language selector
+                document.getElementById('languageSelect').addEventListener('change', (e) => {
+                    if (e.target.value === '') {
+                        this.detectLanguage(false);
+                    } else {
+                        const language = e.target.value;
+                        this.updateLanguageUI(language);
+                        this.setEditorMode(language);
+                    }
+                });
+
+                // Buttons
+                document.getElementById('runBtn').addEventListener('click', () => this.runCode());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stopExecution());
+                document.getElementById('detectBtn').addEventListener('click', () => this.detectLanguage(true));
+                document.getElementById('clearBtn').addEventListener('click', () => this.clearEditor());
+                document.getElementById('sendBtn').addEventListener('click', () => this.sendInput());
+
+                // Complexity buttons
+                document.getElementById('timeComplexityBtn').addEventListener('click', () => this.analyzeComplexity('time'));
+                document.getElementById('spaceComplexityBtn').addEventListener('click', () => this.analyzeComplexity('space'));
+
+                // Input field - Enter key
+                document.getElementById('inputField').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendInput();
+                    }
+                });
+
+                // Auto-detect on code change
+                this.editor.on('change', () => {
+                    if (document.getElementById('languageSelect').value === '') {
+                        this.detectLanguage(false);
+                    }
+                });
+            }
+
+            setEditorMode(language) {
+                const modeMap = {
+                    'C': 'text/x-csrc',
+                    'C++': 'text/x-c++src',
+                    'Python': 'python',
+                    'Java': 'text/x-java'
+                };
+                
+                if (modeMap[language]) {
+                    this.editor.setOption('mode', modeMap[language]);
+                }
+            }
+
+            async detectLanguage(manual = false) {
+                const code = this.editor.getValue().trim();
+                if (!code) {
+                    if (manual) {
+                        this.showMessage('Please enter some code first.', 'error');
+                    }
+                    return;
+                }
+
+                const now = Date.now();
+                if (!manual && (now - this.lastDetectionTime < this.detectionThrottle)) {
+                    return;
+                }
+
+                try {
+                    if (manual) {
+                        this.setStatus('waiting', 'Detecting language...');
+                    }
+                    const response = await fetch(`${this.API_BASE}/detect-language`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code })
+                    });
+
+                    const result = await response.json();
+                    if (result.language) {
+                        this.updateLanguageUI(result.language);
+                        this.lastDetectionTime = Date.now();
+                        if (manual) {
+                            this.showMessage(`Detected language: ${result.language}`, 'success');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Language detection failed:', error);
+                    if (manual) {
+                        this.showMessage('Language detection failed', 'error');
+                    }
+                } finally {
+                    if (manual) {
+                        this.setStatus('ready', 'Ready');
+                    }
+                }
+            }
+
+            updateLanguageUI(language) {
+                const badge = document.getElementById('currentLanguageBadge');
+                badge.textContent = language || 'Auto Detect';
+                
+                if (!language) {
+                    document.getElementById('languageSelect').value = '';
+                }
+                
+                if (language) {
+                    this.setEditorMode(language);
+                }
+                
+                document.getElementById('languageDetected').textContent = language ? 
+                    `Detected: ${language}` : 'Detected: None';
+            }
+
+            async runCode() {
+                const code = this.editor.getValue().trim();
+                if (!code) {
+                    this.showMessage('Please enter some code first.', 'error');
+                    return;
+                }
+
+                this.setRunning(true);
+                this.clearOutput();
+                this.hideInputSection();
+
+                let language = document.getElementById('languageSelect').value;
+                if (!language) {
+                    const detected = document.getElementById('currentLanguageBadge').textContent;
+                    if (detected !== 'Auto Detect') {
+                        language = detected;
+                    }
+                }
+
+                try {
+                    const response = await fetch(`${this.API_BASE}/execute-code`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code, language })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        this.showMessage(result.error, 'error');
+                        this.setRunning(false);
+                        return;
+                    }
+
+                    this.currentExecutionId = result.execution_id;
+                    this.handleExecutionResult(result);
+
+                } catch (error) {
+                    this.showMessage(`Network error: ${error.message}`, 'error');
+                    this.setRunning(false);
+                }
+            }
+
+            async sendInput() {
+                const input = document.getElementById('inputField').value;
+                if (!this.currentExecutionId) {
+                    this.showMessage('No active process to send input to.', 'error');
+                    return;
+                }
+
+                document.getElementById('inputField').disabled = true;
+                document.getElementById('sendBtn').disabled = true;
+
+                try {
+                    const response = await fetch(`${this.API_BASE}/send-input`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            execution_id: this.currentExecutionId,
+                            input: input
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        this.showMessage(result.error, 'error');
+                        this.setRunning(false);
+                        return;
+                    }
+
+                    document.getElementById('inputField').value = '';
+                    this.handleExecutionResult(result);
+
+                } catch (error) {
+                    this.showMessage(`Input error: ${error.message}`, 'error');
+                    this.setRunning(false);
+                } finally {
+                    document.getElementById('inputField').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                }
+            }
+
+            async stopExecution() {
+                if (!this.currentExecutionId) return;
+
+                try {
+                    await fetch(`${this.API_BASE}/stop-process`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ execution_id: this.currentExecutionId })
+                    });
+
+                    this.showMessage('Execution stopped.', 'success');
+                } catch (error) {
+                    this.showMessage(`Stop error: ${error.message}`, 'error');
+                }
+
+                this.setRunning(false);
+                this.hideInputSection();
+            }
+
+            async analyzeComplexity(type) {
+                const code = this.editor.getValue().trim();
+                if (!code) {
+                    this.showMessage('No code to analyze', 'error');
+                    return;
+                }
+
+                this.setStatus('waiting', `Analyzing ${type} complexity...`);
+                
+                const btn = type === 'time' ? document.getElementById('timeComplexityBtn') : 
+                           document.getElementById('spaceComplexityBtn');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<div class="holo-loading"></div><span>Analyzing...</span>';
+                btn.disabled = true;
+
+                try {
+                    const response = await fetch(`${this.API_BASE}/analyze-complexity`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.error) {
+                        this.showMessage(`Analysis Error: ${result.error}`, 'error');
+                        this.setStatus('ready', 'Ready');
+                    } else {
+                        this.displayComplexityResult(result, type);
+                        this.setStatus('ready', 'Analysis completed');
+                        this.showMessage('Complexity analysis completed', 'success');
+                    }
+                } catch (error) {
+                    this.showMessage(`Network Error: ${error.message}`, 'error');
+                    this.setStatus('ready', 'Ready');
+                } finally {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            }
+
+            displayComplexityResult(result, type) {
+                const resultsContainer = document.getElementById('complexityResults');
+                const contentContainer = document.getElementById('complexityContent');
+                
+                resultsContainer.classList.remove('hidden');
+
+                if (typeof result === 'string') {
+                    contentContainer.innerHTML = `<div class="text-red-400">${result}</div>`;
+                    return;
+                }
+
+                const timeColor = type === 'time' ? '#ff0080' : '#64748b';
+                const spaceColor = type === 'space' ? '#00ff88' : '#64748b';
+
+                contentContainer.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="complexity-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-xl font-bold flex items-center gap-3" style="color: ${timeColor}">
+                                    <span class="text-2xl">⚡</span> Time Complexity
+                                </span>
+                                <span class="text-2xl font-mono font-bold px-4 py-2 rounded-xl border-2" 
+                                      style="color: ${timeColor}; border-color: ${timeColor}; background: rgba(255, 0, 128, 0.1);">
+                                    ${result.time_complexity}
+                                </span>
+                            </div>
+                            <p class="text-gray-300 leading-relaxed">${result.time_explanation || 'No explanation available'}</p>
+                        </div>
+                        
+                        <div class="complexity-card">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-xl font-bold flex items-center gap-3" style="color: ${spaceColor}">
+                                    <span class="text-2xl">🚀</span> Space Complexity
+                                </span>
+                                <span class="text-2xl font-mono font-bold px-4 py-2 rounded-xl border-2" 
+                                      style="color: ${spaceColor}; border-color: ${spaceColor}; background: rgba(0, 255, 136, 0.1);">
+                                    ${result.space_complexity}
+                                </span>
+                            </div>
+                            <p class="text-gray-300 leading-relaxed">${result.space_explanation || 'No explanation available'}</p>
+                        </div>
+
+                        ${result.complexity_breakdown ? `
+                        <div class="complexity-card">
+                            <div class="text-xl font-bold mb-4 text-yellow-400 flex items-center gap-3">
+                                <span class="text-2xl">📊</span> Complexity Breakdown
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="text-center p-4 rounded-xl bg-green-500/20 border border-green-500/30">
+                                    <div class="text-green-400 font-bold mb-2 text-lg">Best Case</div>
+                                    <div class="font-mono text-green-300 text-xl">${result.complexity_breakdown.best_case}</div>
+                                </div>
+                                <div class="text-center p-4 rounded-xl bg-yellow-500/20 border border-yellow-500/30">
+                                    <div class="text-yellow-400 font-bold mb-2 text-lg">Average Case</div>
+                                    <div class="font-mono text-yellow-300 text-xl">${result.complexity_breakdown.average_case}</div>
+                                </div>
+                                <div class="text-center p-4 rounded-xl bg-red-500/20 border border-red-500/30">
+                                    <div class="text-red-400 font-bold mb-2 text-lg">Worst Case</div>
+                                    <div class="font-mono text-red-300 text-xl">${result.complexity_breakdown.worst_case}</div>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${result.dominant_operations && result.dominant_operations.length > 0 ? `
+                        <div class="complexity-card">
+                            <div class="text-xl font-bold mb-4 text-purple-400 flex items-center gap-3">
+                                <span class="text-2xl">🔍</span> Key Operations
+                            </div>
+                            <ul class="space-y-3">
+                                ${result.dominant_operations.map(op => `
+                                    <li class="flex items-start gap-3 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                                        <span class="text-purple-400 text-xl mt-1">▶</span>
+                                        <span class="text-gray-300 text-lg">${op}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            handleExecutionResult(result) {
+                if (result.output) {
+                    this.appendOutput(result.output);
+                }
+
+                if (result.error) {
+                    this.appendOutput(`\n[ERROR] ${result.error}`, 'error');
+                }
+
+                if (result.needs_input && !result.completed) {
+                    this.showInputSection();
+                    this.setStatus('waiting', 'Waiting for input...');
+                } else if (result.completed) {
+                    this.setRunning(false);
+                    this.hideInputSection();
+                    this.showMessage('Execution completed.', 'success');
+                } else {
+                    this.setStatus('running', 'Running...');
+                }
+            }
+
+            setRunning(running) {
+                this.isRunning = running;
+                document.getElementById('runBtn').style.display = running ? 'none' : 'inline-block';
+                document.getElementById('stopBtn').style.display = running ? 'inline-block' : 'none';
+                
+                if (running) {
+                    this.setStatus('running', 'Running...');
+                } else {
+                    this.setStatus('ready', 'Ready');
+                    this.currentExecutionId = null;
+                }
+            }
+
+            setStatus(type, text) {
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+                
+                statusDot.className = `status-orb ${type}`;
+                statusText.textContent = text;
+            }
+
+            showInputSection() {
+                document.getElementById('inputSection').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('inputField').focus();
+                }, 200);
+            }
+
+            hideInputSection() {
+                document.getElementById('inputSection').classList.remove('active');
+            }
+
+            clearOutput() {
+                document.getElementById('outputDisplay').textContent = '';
+                document.getElementById('messageContainer').innerHTML = '';
+            }
+
+            appendOutput(text, type = 'normal') {
+                const outputDisplay = document.getElementById('outputDisplay');
+                const span = document.createElement('span');
+                
+                if (type === 'error') {
+                    span.style.color = '#ff4444';
+                } else {
+                    span.style.color = '#e5e7eb';
+                }
+                
+                span.textContent = text;
+                outputDisplay.appendChild(span);
+                outputDisplay.scrollTop = outputDisplay.scrollHeight;
+            }
+
+            showMessage(message, type) {
+                const messageContainer = document.getElementById('messageContainer');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `holo-message ${type}-message`;
+                messageDiv.textContent = message;
+                
+                messageContainer.appendChild(messageDiv);
+                
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 5000);
+            }
+
+            clearEditor() {
+                this.editor.setValue('');
+                this.clearOutput();
+                this.updateLanguageUI(null);
+                document.getElementById('languageSelect').value = '';
+                document.getElementById('complexityResults').classList.add('hidden');
+            }
+        }
+
+        // Initialize the editor when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new DynamicCodeEditor();
+        });
+    </script>
+</body>
+</html>
