@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import subprocess
 import threading
@@ -20,8 +20,13 @@ import json
 # Load environment variables
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='..', static_url_path='')
 CORS(app)
+
+# Serve the frontend application
+@app.route('/')
+def serve_frontend():
+    return send_from_directory(app.static_folder, 'index.html')
 
 # Store running processes with their state
 active_processes = {}

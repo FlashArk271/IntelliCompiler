@@ -836,6 +836,16 @@
                         <span id="languageDetected" class="text-purple-400 font-bold">Detected: None</span>
                     </div>
                 </div>
+
+                <!-- API Status Panel -->
+                <div class="glass-panel p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center">
+                            <span class="text-sm font-semibold text-gray-300 uppercase tracking-wider mr-2">API:</span>
+                            <span id="apiStatus" class="text-green-400 font-bold">Connected</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -843,13 +853,17 @@
     <script>
         class DynamicCodeEditor {
             constructor() {
-                this.API_BASE = 'http://localhost:5000';
+                // Replace process.env.API_URL with hardcoded URL for now
+                this.API_BASE = 'https://intellicompiler.onrender.com';
                 this.currentExecutionId = null;
                 this.isRunning = false;
                 this.lastDetectionTime = 0;
                 this.detectionThrottle = 2000;
                 this.initializeEditor();
                 this.setupEventListeners();
+                this.checkApiConnection();
+                // Check connection every 30 seconds
+                setInterval(() => this.checkApiConnection(), 30000);
             }
 
             initializeEditor() {
@@ -1301,6 +1315,21 @@
                 this.updateLanguageUI(null);
                 document.getElementById('languageSelect').value = '';
                 document.getElementById('complexityResults').classList.add('hidden');
+            }
+
+            async checkApiConnection() {
+                try {
+                    const response = await fetch(`${this.API_BASE}/health`);
+                    if (response.ok) {
+                        document.getElementById('apiStatus').textContent = 'Connected';
+                        document.getElementById('apiStatus').className = 'text-green-400 font-bold';
+                    } else {
+                        throw new Error('API not responding');
+                    }
+                } catch (error) {
+                    document.getElementById('apiStatus').textContent = 'Disconnected';
+                    document.getElementById('apiStatus').className = 'text-red-400 font-bold';
+                }
             }
         }
 
