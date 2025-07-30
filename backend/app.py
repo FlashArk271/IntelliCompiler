@@ -874,14 +874,5 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 if __name__ == '__main__':
-    print("🚀 AI Code Editor Backend Starting...")
-    print("📍 Server will be available at: http://localhost:5000")
-    
-    # Check Groq API configuration
-    if os.getenv('GROQ_API_KEY'):
-        print("✅ Groq API configured for complexity analysis")
-    else:
-        print("⚠️  Groq API not configured - complexity analysis disabled")
-        print("   Add GROQ_API_KEY to your .env file to enable AI features")
-    
-    app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
